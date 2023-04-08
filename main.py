@@ -16,19 +16,20 @@ df = df[['Adj. Open', 'Adj. High', 'Adj. Low', 'Adj. Close', 'Adj. Volume']]
 df['HL_PCT'] = (df['Adj. High'] - df['Adj. Close']) / df['Adj. Close'] * 100.0 #high-low (volatility) %
 df['PCT_change'] = (df['Adj. Close'] - df['Adj. Open']) / df['Adj. Open'] * 100.0 #daily % change
 
+#           price         x           x             x       So literally the only factor that actually effects the price is adjusted close. You would want to use features that are actually impactful on stock price
 df = df[['Adj. Close', 'HL_PCT', 'PCT_change', 'Adj. Volume']] #features/attributes (what may cause the adjusted close price in 10% of the data to change)
 
 forecast_col = 'Adj. Close'
 df.fillna(-99999, inplace=True) #fill not available with -99999 to replace NaN, treated as outlier
 
-forecast_out = int(math.ceil(0.01*len(df))) #This is the number of days out, predict out 10% of the dataframe. Use regression to forecast out. math.ceil will take anything and get to the ceiling (round everything up to the nearest whole), and makes it an int.
+forecast_out = int(math.ceil(0.1*len(df))) #This is the number of days out, predict out 10% of the dataframe. Use regression to forecast out. math.ceil will take anything and get to the ceiling (round everything up to the nearest whole), and makes it an int.
 
 df['label'] = df[forecast_col].shift(-forecast_out) #this is creating the label, and shifting the columns up so each row is the adjusted close 10 days into the future
 
 X = np.array(df.drop(['label'], 1)) #everything but the label column, returns a new dataframe and converts to numpy array
 X = preprocessing.scale(X) #scale it so its normalized between all the data points including all your other values, typically this is skipped
-X = X[:-forecast_out]
 X_lately = X[-forecast_out:]
+X = X[:-forecast_out]
 
 #X = X[:-forecast_out+1] #because typically we wouldn't have labels there for those X's, but because we use the dropna earlier, they are removed
 #df.dropna(inplace=True) don't need to drop this either cause the NaN's were dropped before
@@ -66,7 +67,7 @@ for i in forecast_set: #iterating through forecast set, taking each foreacast an
     next_date = datetime.datetime.fromtimestamp(next_unix)
     next_unix += one_day
     df.loc[next_date] = [np.nan for _ in range(len(df.columns)-1)] + [i] #referencing the index for the dataframe, and referencing the next day (predictions), the date IS the index, if it existed use it if not, create it. I is the list of forecasts, mashes the lists together for each row
-
+print(accuracy)
 print(df.head())
 df['Adj. Close'].plot()
 df['Forecast'].plot()
